@@ -12,5 +12,4 @@ Figure 2: Bottom-up construction of the two-dimensional encoding trees.
 ![fig3](./fig3.svg)  
 Figure 3: Top-down construction of the higher-dimensional encoding tree.
 
-
-      
+#######################################################################################################
