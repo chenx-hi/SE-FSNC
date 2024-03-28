@@ -9,6 +9,5 @@ Figure 1: An illustration of our motivation about the minimal and sufficient met
 
 ![fig2](./fig2.svg)  
 Figure 2: Bottom-up construction of the two-dimensional encoding trees.
-
 ![fig3](./fig3.svg)  
 Figure 3: Top-down construction of the higher-dimensional encoding tree.
