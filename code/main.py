@@ -251,23 +251,37 @@ class TrainFlow:
 
 if __name__ == '__main__':
     args = set_params()
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
-    random.seed(args.seed)
+
     if torch.cuda.is_available() and args.gpu != -1:
         device = torch.device("cuda:" + str(args.gpu))
         torch.cuda.set_device(args.gpu)
     else:
         device = torch.device("cpu")
-    start = time.time()
-    train = TrainFlow()
-    acc_test, interval_test, nmis, aris = train.train()
-    end = time.time()
+
+    accs = []
+    intervals = []
+    nmis = []
+    aris = []
+    seeds = []
+
+    for seed in range(args.runs):
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        random.seed(seed)
+        seeds.append(seed)
+
+        train = TrainFlow()
+        acc_test, interval_test, nmi, ari = train.train()
+        accs.append(acc_test)
+        intervals.append(interval_test)
+        nmis.append(nmi)
+        aris.append(ari)
+
     result_file = open('./SE-FSNC-result-{}.txt'.format(args.dataset_name), 'a')
-    result_file.write('{}-way {}-shot'.format(args.n_way, args.k_shot) + '\n'
-                +'acc: {:.4f}\n'.format(acc_test)
-                + 'interval: {:.4f} '.format(interval_test) + '\n'
-                + 'nmi: {:.4f}'.format(nmis) + '\n'
-                + 'ari: {:.4f}'.format(aris) + '\n\n')
-    print(f'Finished in {(end - start) / 60:.1f} min')
+    result_file.write('{}-way {}-shot'.format(args.n_way, args.k_shot) + '\n' +
+                      'acc: {:.4f}\n std: {:.4f}\n'.format(np.mean(accs), np.std(accs)) + 'accs: {}\n'.format(accs)
+                      + 'interval: {:.4f}, interval: {} '.format(np.mean(intervals), intervals) + '\n'
+                      + 'nmi: {:.4f},  nmis: {}'.format(np.mean(nmis), nmis) + '\n' + 'ari: {:.4f},  aris: {}'.format(
+        np.mean(aris), aris) + '\n' + 'seed: {}'.format(seeds) + '\n\n')
+    result_file.close()

@@ -1,8 +1,14 @@
 import argparse
 import sys
 
-argv = sys.argv
-dataset = argv[1]
+
+def parse_global_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset_name', type=str)
+    parser.add_argument('--n_way', type=int, default=10)
+    parser.add_argument('--k_shot', type=int, default=1)
+    parser.add_argument('--runs', type=int, default=10)
+    return parser.parse_known_args()
 
 
 
@@ -10,11 +16,11 @@ def CoraFull_params():
     parser = argparse.ArgumentParser()
     #####################################
     ## basic info
-    parser.add_argument('--dataset_name', type=str, default=dataset)
+    parser.add_argument('--dataset_name', type=str)
     parser.add_argument('--batch', type=int, default=20000)  # For large datast
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--patience', type=int, default=20)  # 20
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--patience', type=int, default=5)  # 20
     parser.add_argument('--num_epoch', type=int, default=1000)
     parser.add_argument('--num_train', type=int, default=10)
     parser.add_argument('--num_test', type=int, default=100)
@@ -30,7 +36,7 @@ def CoraFull_params():
     parser.add_argument('--attn_drop', type=float, default=0.7)
     parser.add_argument('--negative_slope', type=float, default=0.1)
 
-    parser.add_argument('--beta', type=float, default=0.1)
+    parser.add_argument('--beta', type=float, default=0.1) #0.1
 
     ## graph tree contrast
     parser.add_argument('--tree_height', type=int, default=3)
@@ -61,11 +67,11 @@ def Clothing_params():
     parser = argparse.ArgumentParser()
     #####################################
     ## basic info
-    parser.add_argument('--dataset_name', type=str, default=dataset)
+    parser.add_argument('--dataset_name', type=str)
     parser.add_argument('--batch', type=int, default=20000)  # For large datast
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--seed', type=int, default=4701)
-    parser.add_argument('--patience', type=int, default=20)  # 20
+    parser.add_argument('--seed', type=int, default=0) # 4701
+    parser.add_argument('--patience', type=int, default=5)  # 20
     parser.add_argument('--num_epoch', type=int, default=1000)
     parser.add_argument('--num_train', type=int, default=5)
     parser.add_argument('--num_test', type=int, default=100)
@@ -77,7 +83,7 @@ def Clothing_params():
     parser.add_argument('--num_head', type=int, default=2)  # For GAT
     parser.add_argument('--num_hidden', type=int, default=128)
     parser.add_argument('--num_layers_gat', type=int, default=1)
-    parser.add_argument('--feat_drop', type=float, default=0.2)
+    parser.add_argument('--feat_drop', type=float, default=0.2) #0.2
     parser.add_argument('--attn_drop', type=float, default=0.5)
     parser.add_argument('--negative_slope', type=float, default=0.4)
 
@@ -86,7 +92,7 @@ def Clothing_params():
     ## graph tree contrast
     parser.add_argument('--tree_height', type=int, default=3)
     parser.add_argument('--init_w', type=float, default=0.7)
-    parser.add_argument('--tau', type=float, default=0.5)
+    parser.add_argument('--tau', type=float, default=0.7)
     parser.add_argument('--t', type=float, default=1e-6)
 
     ## MAML cls
@@ -112,11 +118,11 @@ def dblp_params():
     parser = argparse.ArgumentParser()
     #####################################
     ## basic info
-    parser.add_argument('--dataset_name', type=str, default=dataset)
+    parser.add_argument('--dataset_name', type=str)
     parser.add_argument('--batch', type=int, default=40672)  # For large datast
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--seed', type=int, default=1214)
-    parser.add_argument('--patience', type=int, default=20)  # 20
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--patience', type=int, default=5)  # 20
     parser.add_argument('--num_epoch', type=int, default=1000)
     parser.add_argument('--num_train', type=int, default=10)
     parser.add_argument('--num_test', type=int, default=100)
@@ -163,12 +169,12 @@ def arxiv_params():
     parser = argparse.ArgumentParser()
     #####################################
     ## basic info
-    parser.add_argument('--dataset_name', type=str, default=dataset)
+    parser.add_argument('--dataset_name', type=str)
     parser.add_argument('--batch', type=int, default=20000)  # For large datast
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--patience', type=int, default=20)  # 20
-    parser.add_argument('--num_epoch', type=int, default=1000)
+    parser.add_argument('--seed', type=int, default=0) #42
+    parser.add_argument('--patience', type=int, default=2)
+    parser.add_argument('--num_epoch', type=int, default=20)
     parser.add_argument('--num_train', type=int, default=10)
     parser.add_argument('--num_test', type=int, default=100)
     parser.add_argument('--n_way', type=int, default=10)
@@ -211,6 +217,11 @@ def arxiv_params():
 
 
 def set_params():
+    global_args, _ = parse_global_args()
+    dataset = global_args.dataset_name
+    n_way = global_args.n_way
+    k_shot = global_args.k_shot
+    runs = global_args.runs
     if dataset == "CoraFull":
         args = CoraFull_params()
         args.pyg = False
@@ -227,4 +238,7 @@ def set_params():
         args = dblp_params()
         args.pyg = False
         args.big = True
+    args.n_way = n_way
+    args.k_shot = k_shot
+    args.runs = runs
     return args
