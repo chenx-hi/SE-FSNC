@@ -1,4 +1,5 @@
 import torch
+import torch_sparse
 from ogb.nodeproppred import PygNodePropPredDataset
 from torch_geometric.datasets import CoraFull
 import random
@@ -7,6 +8,8 @@ import scipy.io as sio
 from sklearn import preprocessing
 import torch_geometric.transforms as T
 import torch.nn.functional as F
+from torch_geometric.utils import to_undirected, remove_self_loops, add_self_loops
+
 from .codingTree_utils import get_tree_partition
 import dgl
 import scipy.sparse as sp
@@ -199,6 +202,49 @@ def load_dataset(root=None, dataset_source=None):
     return dblp_dataset(dataset, num_classes=num_class)
 
 
+def sparse_mx_to_sparse_tensor(sparse_mx):
+    """Convert a scipy sparse matrix to a sparse tensor.
+    """
+    sparse_mx = sparse_mx.tocoo().astype(np.float32)
+    rows = torch.from_numpy(sparse_mx.row).long()
+    cols = torch.from_numpy(sparse_mx.col).long()
+    values = torch.from_numpy(sparse_mx.data)
+    return torch_sparse.SparseTensor(row=rows, col=cols, value=values, sparse_sizes=torch.tensor(sparse_mx.shape))
+
+
+def normalize(mx):
+    """Row-normalize sparse matrix"""
+    rowsum = np.array(mx.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    mx = r_mat_inv.dot(mx)
+    return mx
+
+def sparse_mx_to_torch_sparse_tensor(sparse_mx):
+    """Convert a scipy sparse matrix to a torch sparse tensor."""
+    sparse_mx = sparse_mx.tocoo().astype(np.float32)
+    indices = torch.from_numpy(
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+    values = torch.from_numpy(sparse_mx.data)
+    shape = torch.Size(sparse_mx.shape)
+    return torch.sparse.FloatTensor(indices, values, shape)
+
+def sym_adj(edge_index, num_nodes):
+    edge_index = to_undirected(edge_index)
+    edge_index, _ = remove_self_loops(edge_index)
+    edge_index, _ = add_self_loops(edge_index, num_nodes=num_nodes)
+    adj = sp.csr_matrix(([1]*edge_index.size(1), (edge_index[0].numpy(), edge_index[1].numpy())),
+                        shape=(num_nodes, num_nodes), dtype=np.float32)
+    # build symmetric adjacency matrix
+    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
+    adj = normalize(adj + sp.eye(adj.shape[0]))
+
+    adj = sparse_mx_to_torch_sparse_tensor(adj)
+    return adj
+
+
+
 def load_data(dataset_name, tree_height, t, big):
 
     if dataset_name == 'CoraFull':
@@ -243,7 +289,7 @@ def load_data(dataset_name, tree_height, t, big):
     else:
         tree_partition = get_tree_partition(dataset_name, data, tree_height, tree_path)  # 稀疏矩阵存编码树
 
-    contrast_weight = get_con_weight(tree_partition, t, big,'mean')
+    contrast_weight = get_con_weight(tree_partition, t, big,'entropy')
 
     # norm
     normalized_partition = []
@@ -262,6 +308,19 @@ def load_data(dataset_name, tree_height, t, big):
     # add self loop
     g = dgl.remove_self_loop(g)
     g = dgl.add_self_loop(g)
+
+    if big:
+        graph = sym_adj(data.edge_index, data.num_nodes)
+        alpha = 0.05
+        output = alpha * data.x
+        for _ in range(5):
+            data.x = torch.spmm(graph, data.x)
+            output = output + data.x / 5
+        data.x = output
+    #################################
+    # u, v = g.edges()
+    # edge_index = torch.stack([u, v], dim=0).long()  # 确保是长整型
+    # g = edge_index#Data(edge_index=edge_index)
 
     return DataSet(dataset=dataset_name, graph=g, x=data.x, y=data.y, num_class=dataset.num_classes,
                    tree_partition=normalized_partition, contrast_weight=contrast_weight, id_by_class=id_by_class,
