@@ -1,6 +1,6 @@
 # Structural Entropy Guided Meta Learning for Few-shot Node Classification
 
-To run the proposed model in the paper, SEP-G and SEP-N, see the corresponding folder:
+To run the proposed model in the paper, SE-FSNC and SE-FSGC, see the corresponding folder:
 
 * Few-Shot Node Classification: [code]
   
