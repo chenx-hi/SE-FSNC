@@ -9,7 +9,7 @@ To run the proposed model in the paper, SE-FSNC and SE-FSGC, see the correspondi
   cd code
   ```
   ```
-  python main.py --dataset_name "CoraFull" --n_way 10 --k_shot 1 --runs 10
+  python main.py --dataset_name "ogbn-arxiv" --n_way 10 --k_shot 1 --runs 10
   ```
   You can run few-shot tasks on other datasets by modifying the "dataset_name" parameter, as well as the "n_way" and "k_shot" parameters.
 
